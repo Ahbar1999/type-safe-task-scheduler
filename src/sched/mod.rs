@@ -6,7 +6,7 @@ use thiserror::Error;
 use std::sync::mpsc;
 
 #[derive(Error, Debug)]
-pub enum SchedulerError {
+pub enum SchedulerError<T> {
     #[error("scheduler is shut down")]
     ShutDown,
 
@@ -14,7 +14,7 @@ pub enum SchedulerError {
     TaskFailed(TaskId, String),
     
     #[error("channel send error")]
-    ChannelError(#[from] std::sync::mpsc::SendError<()>),
+    ChannelError(#[from] std::sync::mpsc::SendError<T>),
     
     #[error("worker panicked")]
     WorkerPanic,
@@ -58,10 +58,12 @@ impl<R: Send + 'static> Scheduler<R> {
     }
     
     // submit a task
-    pub fn submit(&self, item: WorkItem<R>) -> Result<TaskId, SchedulerError> {
-        unimplemented!()    
+    pub fn submit(&self, item: WorkItem<R>) -> Result<TaskId, SchedulerError<WorkItem<R>>> {
+        let item_id = item.id.clone();
+        if let Err(msg) = self.sender.as_ref().unwrap().send(item) {
+            Err(msg.into())
+        } else {
+            Ok(item_id)
+        }
     }
 }
-
-
- 
