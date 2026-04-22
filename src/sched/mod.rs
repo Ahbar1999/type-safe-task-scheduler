@@ -44,23 +44,18 @@ impl<R: Send + Debug + 'static> Scheduler<R> {
                     let _ = s.spawn(move || {
                         // println!("spawned thread #{:?}", thread_id);
                         loop {
+                            {
+                            /*
+                             if we got the lock we necessarily recv next job on this thread;
+                             if we had used a nonblocking call then shared_job_rx lock is still held causing a
+                             deadlock until this thread proceeds which is essentially the same as blocking call but
+                             try_recv() is still necessary for the case when there are
+                             no tasks this thread
+                             will block forever
+                             */
+                            }
                             if let Ok(job_rx) = _shared_job_rx.try_lock() {
-                                if let Ok(job) = job_rx.try_recv() {   // if we got the lock we
-                                                                                // necessarily recv next
-                                                                                // job on this thread;
-                                                                                // if we had used a
-                                                                                // nonblocking call then
-                                                                                // shared_job_rx lock is
-                                                                                // still held causing a
-                                                                                // deadlock until this
-                                                                                // thread proceeds which is
-                                                                                // essentially the same as
-                                                                                // blocking call but
-                                                                                // try_recv() is still
-                                                                                // necessary for the
-                                                                                // case when there are
-                                                                                // no tasks this thread
-                                                                                // will block forever
+                                if let Ok(job) = job_rx.try_recv() {  
                                     println!("thread {:?} received a job {:?}", thread_id, job.id);
                                     let result = TaskResult {
                                         id: job.id,
